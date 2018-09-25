@@ -1,0 +1,1573 @@
+Public deductType As Integer
+Public diffcity As Integer
+Public Exempt As Integer
+Public myStateTax As Double
+Public myLocalTax As Double
+Public diffState As Integer
+Public myIncome As Double
+Public my401k_percent As Double
+Public my401k As Double
+Public myHC_month As Double
+Public myHC As Double
+Public myDed As Double
+Public myCity As String
+Public myResCity As String
+Public myState As String
+Public myResState As String
+Public myDeduct As Double
+Public myExemption As Integer
+Public myWageWorks As Double
+Public myAGI As Double
+Public myNonItemizedDeduct As Double
+Public myStipendIncome As Double
+Public myFederalTax As Double
+Public myFICA As Double
+Public mySALT As Double
+Public myMedicare As Double
+Public mySS As Double
+Public myItemizedDeduct As Double
+Public myPostTaxIncome As Double
+Public myRent As Double
+Public myUtilities As Double
+Public myGroceries As Double
+Public myPhone As Double
+Public myPostTaxPublicTransit As Double
+Public myOtherTransit As Double
+Public myGym As Double
+Public myDebtRepayment As Double
+Public myOtherMonthly As Double
+Public myClothing As Double
+Public myPersonalCare As Double
+Public mySavings As Double
+Public myVacation As Double
+Public myLeisure As Double
+Public myOtherYearly As Double
+Public myFederalDeduct As Double
+Public myTaxState As String
+Public stipendIncome As Integer
+Function YEARLY(X As Double) As Double
+    Application.Volatile
+    YEARLY = X * 12
+End Function
+Function LEFTOVER(X As Double, Y As Double, Z As Double) As Double
+    Application.Volatile
+    LEFTOVER = X - Y - Z 'X is post tax income, Y is yearly cost of reoccuring monthly expenses, and Z is yearly cost of yearly expenses
+End Function
+
+Sub budget_entire()
+'
+' Budget Macro
+'
+MsgBox "This Excel macro will help you calculate your estimated taxes, as well as create a budget based on your income. This macro assumes that you are single, with no dependents, are a W-2 employee (not self-employed) and live/earn income in the USA. This macro also does not take into account the Alternative Minimum Tax, the Pease Threshold phaseouts for exemptions and deductions, or any of the tax credits. Find a real accountant and/or lobby for tax reform.", vbOKOnly
+
+MsgBox "Please note that the federal portion of this macro has been updated for the 2018 tax year. However, state and local taxes may not be entirely accurate."
+
+myIncome = InputBox("Enter your expected income for the year.")
+my401k_percent = InputBox("Enter the percentage of your income that you expect to contribute, pre-tax, to your 401k. Do not include the % symbol-enter 1% as 1, 2% as 2, etc.")
+myHC_month = InputBox("Enter the amount that you expect to contribute MONTHLY to your medical/dental/vision insurance premiums and your pre-tax health spending account (the latter must be < $283).)")
+Dim myWageWorks_month As Double
+myWageWorks_month = InputBox("Enter the amount which you plan to contribute MONTHLY pre-tax to a pre-tax commution account (<= 255).")
+myWageWorks = myWageWorks_month * 12
+myCity = Range("C2").Value
+myState = Range("A2").Value
+myResState = Range("F2").Value
+myResCity = Range("H2").Value
+frmDiffCity.Show
+
+myNonItemizedDeduct = InputBox("Please enter the amount that you plan to claim as adjustments to income--i.e. non-itemized deductions. This can include student loan interest, IRA Contributions, etc. If you're a student who pays for expenses from a stipend, fellowship or scholarship, include the amount you pay for textbooks, your laptop, or any other school-related expenses.")
+frmDeduct.Show
+
+If deductType = 1 Then
+myItemizedDeduct = InputBox("Enter the total dollar amount that you plan to claim as itemized deductions.")
+myDeduct = myItemizedDeduct + myNonItemizedDeduct
+mySALT = InputBox("Enter the amount that you plan to claim as your state and local tax (SALT) deductions, if any. Note this now has a maximum of $10,000. If you do not plan to claim this deduction, enter 0.")
+
+ElseIf deductType = 2 Then
+myDeduct = 12000 + myNonItemizedDeduct 'This is taken from the IRS's standard deduction for single filers. Updated for 2018!
+End If
+
+myFederalDeduct = myDeduct - myNonItemizedDeduct
+
+frmExemption.Show 'Keeping this form for state and local tax reasons (some localities still have personal exemptions).
+
+frmStipend.Show
+'Calculations from numbers entered
+myHC = myHC_month * 12 'total amount per year spent on pre-tax health care
+my401k = my401k_percent / 100 * myIncome
+myAGI = myIncome - my401k - myHC - myWageWorks - myDeduct 'adjusted gross income
+'Run Federal and FICA taxes macro
+Federaltaxes_FICA
+
+'Run state and local taxes macro
+StateLocalTaxes
+
+myPostTaxIncome = myIncome - my401k - myHC - myWageWorks - myFederalTax - myStateTax - myLocalTax - myFICA
+'Creating Budget
+myRent = InputBox("Please enter your estimated monthly cost of rent.")
+myUtilities = InputBox("Please enter your estimated monthly cost of utilities.")
+myGroceries = InputBox("Please enter your estimated monthly cost of groceries.")
+myPhone = InputBox("Please enter the estimated monthly cost of your phone plan.")
+myPostTaxPublicTransit = InputBox("Please enter what you plan to spend on public transit in a month, from your TAKE-HOME (i.e. post tax) income. Do not include any pre-tax commuter benefits!")
+myOtherTransit = InputBox("Please enter what you plan to spend monthly on other forms of transit--Ubers, taxis, gas, etc. Do not include any loans.")
+myGym = InputBox("Please enter what you plan to spend monthly on a gym membership.")
+myDebtRepayment = InputBox("Please enter the total amount you plan to spend monthly on repayment of loans--student loans, car loans, etc. Do not include mortgages or credit cards that you pay off in full each month.")
+myOtherMonthly = InputBox("Please enter any other reoccuring monthly expenses (laundry, dry cleaning, etc.).")
+myClothing = InputBox("Please enter what you plan to spend on clothing yearly.")
+myPersonalCare = InputBox("Please enter what you plan to spend on personal care per year (including toiletries, cleaning supplies, hair appointments, etc.).")
+mySavings_Percent = InputBox("Please enter the percentage of your gross pay that you wish to save. Do not include the % symbol--enter 10% as 10, 5% as 5, etc.")
+mySavings = (mySavings_Percent / 100) * myIncome
+myVacation = InputBox("Please enter the yearly amount you plan to spend on vacations and traveling (including for the holidays).")
+myLeisure = InputBox("Please enter the amount you plan to spend per-year on non-vacation leisure activities (eating out, going to plays, etc.).")
+
+If deductType = 1 Then
+myOtherYearly = InputBox("Please enter any other yearly expenses. Don't forget to include any of your itemized deductions that aren't covered in the rest of the macro!")
+ElseIf deductType = 2 Then
+myOtherYearly = InputBox("Please enter any other yearly expenses.")
+End If
+
+'Format Budget
+FormattingBudget
+
+MsgBox "Congrats, your macro is finished! If you want to try out different numbers for your post-tax expenses, simply enter the number in and the budget will automatically update.", vbOKOnly
+
+End Sub
+Sub reestimate_taxes()
+
+myState = Range("A2").Value
+myCity = Range("C2").Value
+myResState = Range("F2").Value
+myResCity = Range("H2").Value
+myIncome = Range("A5").Value
+my401k = Range("E8").Value
+myHC = Range("I8").Value
+myWageWorks = Range("N8").Value
+
+frmDiffCity.Show
+
+myNonItemizedDeduct = InputBox("Please enter the amount that you plan to claim as adjustments to income--i.e. non-itemized deductions. This can include student loan interest, IRA Contributions, etc. If you're a student who pays for expenses from a stipend, fellowship or scholarship, include the amount you pay for textbooks, your laptop, or any other school-related expenses.")
+frmDeduct.Show
+
+If deductType = 1 Then
+myItemizedDeduct = InputBox("Enter the total dollar amount that you plan to claim as itemized deductions.")
+myDeduct = myItemizedDeduct + myNonItemizedDeduct
+mySALT = InputBox("Enter the amount that you plan to claim as your state and local tax (SALT) deductions, if any. If you do not plan to claim this deduction, enter 0.")
+
+ElseIf deductType = 2 Then
+myDeduct = 12000 + myNonItemizedDeduct 'This is taken from the IRS's standard deduction for single filers
+End If
+
+myFederalDeduct = myDeduct - myNonItemizedDeduct
+
+frmExemption.Show
+
+frmStipend.Show
+
+myAGI = myIncome - my401k - myHC - myWageWorks - myDeduct 'adjusted gross income
+'Run Federal and FICA taxes macro
+Federaltaxes_FICA
+
+'Run state and local taxes macro
+StateLocalTaxes
+
+
+myPostTaxIncome = myIncome - my401k - myHC - myWageWorks - myFederalTax - myStateTax - myLocalTax - myFICA
+Range("R8").Select
+ActiveCell = myFederalDeduct
+Range("Z8").Select
+ActiveCell = myNonItemizedDeduct
+Range("A11").Select
+ActiveCell = myFederalTax + myStateTax + myLocalTax + myFICA
+Range("G11").Select
+ActiveCell = myTaxState
+Range("E11").Select
+ActiveCell = myFederalTax
+Range("H11").Select
+ActiveCell = myStateTax
+Range("J11").Select
+ActiveCell = myLocalTax
+Range("L11").Select
+ActiveCell = myFICA
+Range("A14").Select
+ActiveCell = myPostTaxIncome
+Range("A1").Select
+MsgBox ("Congrats, your macro is finished!"), vbOKOnly
+
+End Sub
+Sub Federaltaxes_FICA()
+If myAGI < 0 Then
+    myAGI = 0
+End If
+'Federal Taxation (state and local done in another macro)
+If myAGI <= 9525 Then
+myFederalTax = 0.1 * myAGI
+
+ElseIf myAGI > 9525 And myAGI <= 38700 Then
+myFederalTax = 952.5 + 0.12 * (myAGI - 9525)
+
+ElseIf myAGI > 38700 And myAGI <= 82500 Then
+myFederalTax = 4453.5 + 0.22 * (myAGI - 38700)
+
+ElseIf myAGI > 82500 And myAGI <= 157500 Then
+myFederalTax = 14089.5 + 0.24 * (myAGI - 82500)
+
+ElseIf myAGI > 157500 And myAGI <= 200000 Then
+myFederalTax = 32089.5 + 0.32 * (myAGI - 157500)
+
+ElseIf myAGI > 200000 And myAGI <= 500000 Then
+myFederalTax = 45689.5 + 0.35 * (myAGI - 200000)
+
+ElseIf myAGI > 500000 Then
+myFederalTax = 150689.5 + 0.37 * (myAGI - 500000)
+End If
+
+
+Dim myFICAIncome As Double
+'FICA is not taxed on income that goes to health care (health insurance premiums or FSA) or pre-tax transit options
+myFICAIncome = myIncome - myHC - myWageWorks
+If stipendIncome = 1 Then
+    myStipendIncome = InputBox("Please enter how much you receive in graduate school stipends/fellowships (this should be included as a part of your overall income.)")
+    myFICAIncome = myFICAIncome - myStipendIncome
+End If
+
+'FICA taxes; SS tax only applies to earnings under 128400; extra medicare tax is part of the ACA
+If myFICAIncome <= 200000 Then
+    myMedicare = 0.0145 * myFICAIncome
+ElseIf myFICAIncome > 200000 Then
+    myMedicare = 0.0235 * myFICAIncome
+End If
+
+If myFICAIncome <= 128400 Then
+    mySS = 0.062 * myFICAIncome
+ElseIf myFICAIncome > 128400 Then
+    mySS = 7960.8
+End If
+myFICA = mySS + myMedicare
+End Sub
+Sub FormattingBudget()
+    Range("A4").Select
+    ActiveCell.FormulaR1C1 = "Total Income"
+    Range("A7").Select
+    ActiveCell.FormulaR1C1 = "Total Pre-Tax Deductions"
+    Range("E7").Select
+    ActiveCell.FormulaR1C1 = "401k Contributions"
+    Range("I7").Select
+    ActiveCell.FormulaR1C1 = "Health Care Contributions"
+    Range("N7").Select
+    ActiveCell.FormulaR1C1 = "Other Pre-Tax Deductions"
+    Range("R7").Select
+    ActiveCell.FormulaR1C1 = "(Federal) Tax Deductions"
+    Range("Z7").Select
+    ActiveCell.FormulaR1C1 = "Adjustments to Income"
+    Range("A10").Select
+    ActiveCell.FormulaR1C1 = "Total Taxes"
+    Range("E10").Select
+    ActiveCell.FormulaR1C1 = "Federal"
+    Range("G10").Select
+    ActiveCell = "Tax State"
+    Range("H10").Select
+    ActiveCell.FormulaR1C1 = "State"
+    Range("J10").Select
+    ActiveCell.FormulaR1C1 = "Local"
+    Range("L10").Select
+    ActiveCell.FormulaR1C1 = "FICA"
+    Range("A13").Select
+    ActiveCell.FormulaR1C1 = "Total Post-Tax Income"
+    Range("E13").Select
+    ActiveCell.FormulaR1C1 = "Monthly Expenses"
+    Range("G13").Select
+    ActiveCell.FormulaR1C1 = "Rent"
+    Range("I13").Select
+    ActiveCell.FormulaR1C1 = "Utilities"
+    Range("K13").Select
+    ActiveCell.FormulaR1C1 = "Groceries"
+    Range("M13").Select
+    ActiveCell.FormulaR1C1 = "Phone"
+    Range("O13").Select
+    ActiveCell.FormulaR1C1 = "Post-Tax Public Transit"
+    Range("S13").Select
+    ActiveCell.FormulaR1C1 = "Other Transit"
+    Range("V13").Select
+    ActiveCell.FormulaR1C1 = "Gym"
+    Range("X13").Select
+    ActiveCell.FormulaR1C1 = "Debt Repayment"
+    Range("AA13").Select
+    ActiveCell.FormulaR1C1 = "Other Monthly Expenses"
+    Range("C14").Select
+    ActiveCell.FormulaR1C1 = "Monthly Cost"
+    Range("C15").Select
+    ActiveCell.FormulaR1C1 = "Yearly Cost"
+    Range("E17").Select
+    ActiveCell.FormulaR1C1 = "Yearly Expenses"
+    Range("G17").Select
+    ActiveCell.FormulaR1C1 = "Clothing"
+    Range("I17").Select
+    ActiveCell.FormulaR1C1 = "Personal Care (Toiletries, etc.)"
+    Range("M17").Select
+    ActiveCell.FormulaR1C1 = "Savings"
+    Range("O17").Select
+    ActiveCell.FormulaR1C1 = "Traveling/Vacation"
+    Range("R17").Select
+    ActiveCell.FormulaR1C1 = "Leisure"
+    Range("T17").Select
+    ActiveCell.FormulaR1C1 = "Other Yearly Expenses"
+    Range("E20").Select
+    ActiveCell.FormulaR1C1 = "Left"
+Range("1:1,4:4,7:7,10:10,13:13,C14,C15,17:17,20:20").Activate
+Selection.Font.Bold = True
+'Enter Variables into Sheet
+    Range("A5").Select
+    ActiveCell.FormulaR1C1 = myIncome
+    Range("E8").Select
+    ActiveCell.FormulaR1C1 = my401k
+    Range("I8").Select
+    ActiveCell.FormulaR1C1 = myHC
+    Range("N8").Select
+    ActiveCell.FormulaR1C1 = myWageWorks
+    Range("A8").Select
+    ActiveCell.FormulaR1C1 = "=SUM(RC[4],RC[8],RC[13])" 'equals sum of my401k, myHC, and mywageworks
+    Range("R8").Select
+    ActiveCell.FormulaR1C1 = myFederalDeduct
+    Range("Z8").Select
+    ActiveCell.FormulaR1C1 = myNonItemizedDeduct
+    Range("A11").Select
+    ActiveCell.FormulaR1C1 = myFederalTax + myStateTax + myLocalTax + myFICA
+    Range("E11").Select
+    ActiveCell.FormulaR1C1 = myFederalTax
+    Range("G11").Select
+    ActiveCell.FormulaR1C1 = myTaxState
+    Range("H11").Select
+    ActiveCell.FormulaR1C1 = myStateTax
+    Range("J11").Select
+    ActiveCell.FormulaR1C1 = myLocalTax
+    Range("L11").Select
+    ActiveCell.FormulaR1C1 = myFICA
+    Range("A14").Select
+    ActiveCell.FormulaR1C1 = myPostTaxIncome
+    Range("G14").Select
+    ActiveCell.FormulaR1C1 = myRent
+    Range("I14").Select
+    ActiveCell.FormulaR1C1 = myUtilities
+    Range("K14").Select
+    ActiveCell.FormulaR1C1 = myGroceries
+    Range("M14").Select
+    ActiveCell.FormulaR1C1 = myPhone
+    Range("O14").Select
+    ActiveCell.FormulaR1C1 = myPostTaxPublicTransit
+    Range("S14").Select
+    ActiveCell.FormulaR1C1 = myOtherTransit
+    Range("V14").Select
+    ActiveCell.FormulaR1C1 = myGym
+    Range("X14").Select
+    ActiveCell.FormulaR1C1 = myDebtRepayment
+    Range("AA14").Select
+    ActiveCell.FormulaR1C1 = myOtherMonthly
+    Range("G18").Select
+    ActiveCell.FormulaR1C1 = myClothing
+    Range("I18").Select
+    ActiveCell.FormulaR1C1 = myPersonalCare
+    Range("M18").Select
+    ActiveCell.FormulaR1C1 = mySavings
+    Range("O18").Select
+    ActiveCell.FormulaR1C1 = myVacation
+    Range("R18").Select
+    ActiveCell.FormulaR1C1 = myLeisure
+    Range("T18").Select
+    ActiveCell.FormulaR1C1 = myOtherYearly
+    Range("G15").Select
+    ActiveCell.FormulaR1C1 = "=YEARLY(R[-1]C)"
+    Range("I15").Select
+    ActiveCell.FormulaR1C1 = "=YEARLY(R[-1]C)"
+    Range("K15").Select
+    ActiveCell.FormulaR1C1 = "=YEARLY(R[-1]C)"
+    Range("M15").Select
+    ActiveCell.FormulaR1C1 = "=YEARLY(R[-1]C)"
+    Range("O15").Select
+    ActiveCell.FormulaR1C1 = "=YEARLY(R[-1]C)"
+    Range("S15").Select
+    ActiveCell.FormulaR1C1 = "=YEARLY(R[-1]C)"
+    Range("V15").Select
+    ActiveCell.FormulaR1C1 = "=YEARLY(R[-1]C)"
+    Range("X15").Select
+    ActiveCell.FormulaR1C1 = "=YEARLY(R[-1]C)"
+    Range("AA15").Select
+    ActiveCell = "=YEARLY(R[-1]C)"
+    Range("E14").Select
+    ActiveCell.FormulaR1C1 = "=SUM(RC[2]:RC[22])"
+    Range("E15").Select
+    ActiveCell.FormulaR1C1 = "=YEARLY(R[-1]C)"
+    Range("E18").Select
+    ActiveCell = "=SUM(RC[2]:RC[22])"
+    Range("E21").Select
+    ActiveCell.FormulaR1C1 = "=LEFTOVER(R[-7]C[-4],R[-6]C,R[-3]C)"
+Cells.Select
+    With Selection.Font
+        .Name = "Times New Roman"
+        .Size = 12
+        .Strikethrough = False
+        .Superscript = False
+        .Subscript = False
+        .OutlineFont = False
+        .Shadow = False
+        .Underline = xlUnderlineStyleNone
+        .ThemeColor = xlThemeColorLight1
+        .TintAndShade = 0
+        .ThemeFont = xlThemeFontNone
+End With
+Range("A1").Select
+End Sub
+
+Sub StateLocalTaxes()
+Dim myStateAGI As Double
+Dim myLocalAGI As Double
+Dim myStateDeduct As Double
+Dim myStateExemption As Double
+Dim myStateTax_Recip As Double
+
+myStateDeduct = myDeduct - myNonItemizedDeduct 'do not include adjustments to income, as they are not included in many states' tax laws
+If Exempt = 1 Then
+myStateExemption = 4050
+ElseIf Exempt = 2 Then
+    myStateExemption = 0
+End If
+
+
+myStateTax = 0 'if state/local taxes are not specified in the macro, then they're equal to 0
+myLocalTax = 0
+
+
+'Reciprocity for State Income Tax; if someone works in one of these states but lives in another they pay the taxes for their resident state
+If myState = "DC" Or myState = "IL" Or myState = "IN" Or myState = "IA" Or myState = "KY" Or myState = "MD" Or myState = "MI" Or myState = "MN" Or myState = "MT" Or myState = "NJ" Or myState = "ND" Or myState = "OH" Or myState = "PA" Or myState = "VA" Or myState = "WV" Or myState = "WI" Then
+    If myState = "DC" Then
+        If myResState <> "DC" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "DC"
+        End If
+    End If
+    If myState = "IL" Then
+        If myResState = "IA" Or myResState = "KY" Or myResState = "MI" Or myResState = "WI" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "IL"
+        End If
+    End If
+    If myState = "IN" Then
+        If myResState = "KY" Or myResState = "MI" Or myResState = "OH" Or myResState = "PA" Or myResState = "WI" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "IN"
+        End If
+    End If
+    If myState = "IA" Then
+        If myResState = "IL" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "IA"
+        End If
+    End If
+    If myState = "KY" Then
+        If myResState = "IL" Or myResState = "IN" Or myResState = "MI" Or myResState = "OH" Or myResState = "VA" Or myResState = "WV" Or myResState = "WI" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "KY"
+        End If
+    End If
+    If myState = "MD" Then
+        If myResState = "DC" Or myResState = "PA" Or myResState = "VA" Or myResState = "WV" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "MD"
+        End If
+    End If
+    If myState = "MI" Then
+        If myResState = "IL" Or myResState = "IN" Or myResState = "KY" Or myResState = "MN" Or myResState = "OH" Or myResState = "WI" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "MI"
+        End If
+    End If
+    If myState = "MN" Then
+        If myResState = "MI" Or myResState = "ND" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "MN"
+        End If
+    End If
+    If myState = "MT" Then
+        If myResState = "ND" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "MT"
+        End If
+    End If
+    If myState = "NJ" Then
+        If myResState = "PA" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "NJ"
+        End If
+    End If
+    If myState = "ND" Then
+        If myResState = "MN" Or myResState = "MT" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "ND"
+        End If
+    End If
+    If myState = "OH" Then
+        If myResState = "IN" Or myResState = "KY" Or myResState = "MI" Or myResState = "PA" Or myResState = "WV" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "OH"
+        End If
+    End If
+    If myState = "PA" Then
+        If myResState = "IN" Or myResState = "MD" Or myResState = "NJ" Or myResState = "OH" Or myResState = "VA" Or myResState = "WV" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "PA"
+        End If
+    End If
+    If myState = "VA" Then
+        If myResState = "DC" Or myResState = "KY" Or myResState = "MD" Or myResState = "PA" Or myResState = "WV" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "VA"
+        End If
+    End If
+    If myState = "WV" Then
+        If myResState = "VA" Or myResState = "KY" Or myResState = "MD" Or myResState = "OH" Or myResState = "PA" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "WV"
+        End If
+    End If
+    If myState = "WI" Then
+        If myResState = "IL" Or myResState = "IN" Or myResState = "KY" Or myResState = "MI" Then
+            myTaxState = myResState
+        Else
+            myTaxState = "WI"
+        End If
+    End If
+    myState = myTaxState
+Else
+    myTaxState = myState
+End If
+
+
+'State and Local Taxes
+If myState = "AL" Then
+        If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT 'exclude state and local taxes from itemized deductions
+            If myStateDeduct < 7500 Then
+                myStateDeduct = 7500 'if someone's adjusted itemized deductions are less than the standard deduction in that state, they should be taking the Std Ded
+            End If
+        End If
+        If deductType = 2 Then
+        myStateDeduct = 7500
+        End If
+        If Exempt = 1 Then
+        myStateExemption = 1500
+        End If
+    myStateAGI = myIncome - my401k - myHC - myWageWorks - myStateDeduct - myStateExemption
+    If myStateAGI <= 500 Then
+        myStateTax = 0.02 * myStateAGI
+    ElseIf myStateAGI > 500 And myStateAGI <= 3000 Then
+        myStateTax = 10 + 0.04 * (myStateAGI - 500)
+    ElseIf myStateAGI > 3000 Then
+     myStateTax = 130 + 0.05 * (myStateAGI - 3000)
+    End If
+    If myCity = "Birmingham, AL" Or myResCity = "Birmingham, AL" Then
+        myLocalTax = 0.01 * myIncome
+    End If
+
+ElseIf myState = "AK" Then
+myStateTax = 0
+myLocalTax = 0
+
+ElseIf myState = "AZ" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 4945 Then
+                myStateDeduct = 4945
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 4945
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 2100
+    End If
+    myStateAGI = myIncome - myStateDeduct - myStateExemption - my401k - myHC - myWageWorks
+    If myStateAGI <= 10163 Then
+        myStateTax = 0.0259 * myStateAGI
+    ElseIf myStateAGI > 10163 And myStateAGI <= 25406 Then
+        myStateTax = 263.22 + 0.0288 * (myStateAGI - 10163)
+    ElseIf myStateAGI > 25406 And myStateAGI <= 50812 Then
+        myStateTax = 702.22 + 0.0336 * (myStateAGI - 25406)
+    ElseIf myStateAGI > 50812 And myStateAGI <= 152434 Then
+        myStateTax = 1555.86 + 0.0424 * (myStateAGI - 50812)
+    ElseIf myStateAGI > 152434 Then
+        myStateTax = 5864.64 + 0.0454 * (myStateAGI - 152434)
+    End If
+
+ElseIf myState = "AR" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 2000 Then
+                myStateDeduct = 2000
+            End If
+     ElseIf deductType = 2 Then
+        myStateDeduct = 2000
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 26
+    End If
+    myAGI = myIncome - myStateDeduct - myStateExemption - my401k - myHC - myWageWorks
+    If myAGI <= 4299 Then
+        myStateTax = 0.009 * myAGI
+    ElseIf myAGI <= 8399 And myAGI > 4300 Then
+        myStateTax = 38.69 + (myAGI - 4300) * 0.024
+    ElseIf myAGI <= 12699 And myAGI > 8400 Then
+        myStateTax = 135.07 + (myAGI - 8400) * 0.034
+    ElseIf myAGI <= 21099 And myAGI > 12700 Then
+        myStateTax = 281.27 + (myAGI - 12700) * 0.044
+    ElseIf myAGI <= 35299 And myAGI > 21100 Then
+        myStateTax = 650.87 + (myAGI - 21100) * 0.06
+    ElseIf myAGI > 35300 Then
+        myStateTax = 1502.87 + 0.07 * myAGI
+    End If
+    If myResCity = "Berryville, AR" Or myResCity = "Green Forest, AR" Or myResCity = "Westside, AR" Or myResCity = "Hope, AR" Or myResCity = "Huntsville, AR" Or myResCity = "Waldron, AR" Or myResCity = "Marshall, AR" Then
+        myLocalTax = 0.1 * myStateTax
+    End If
+
+ElseIf myState = "CA" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 3992 Then
+                myStateDeduct = 3992
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 3992
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
+    If myAGI <= 7850 Then
+        myStateTax = 0.01 * myAGI
+    ElseIf myAGI <= 18610 And myAGI > 7850 Then
+        myStateTax = 0.02 * (myAGI - 7850) + 78.5
+    ElseIf myAGI <= 29372 And myAGI > 18610 Then
+        myStateTax = 0.04 * (myAGI - 18610) + 293.7
+    ElseIf myAGI <= 40773 And myAGI > 29372 Then
+        myStateTax = 0.06 * (myAGI - 29372) + 724.18
+    ElseIf myAGI <= 51530 And myAGI > 40773 Then
+        myStateTax = 0.08 * (myAGI - 40773) + 1408.24
+    ElseIf myAGI <= 263222 And myAGI > 51530 Then
+        myStateTax = 0.093 * (myAGI - 51530) + 2408.64
+    ElseIf myAGI <= 315866 And myAGI > 263222 Then
+        myStateTax = 0.103 * (myAGI - 263222) + 22095.98
+    ElseIf myAGI <= 526443 And myAGI > 315866 Then
+        myStateTax = 0.113 * (myAGI - 315866) + 27518.33
+    ElseIf myAGI <= 1000000 And myAGI > 526443 Then
+        myStateTax = 0.123 * (myAGI - 526443) + 51313.53
+    ElseIf myAGI > 1000000 Then
+        myStateTax = 0.133 * (myAGI - 1000000) + 109561.04
+    End If
+
+ElseIf myState = "CO" Then
+    myStateTax = 0.0463 * myAGI
+        If myCity = "Denver, CO" And myAGI > 6000 Then
+            myLocalTax = 69
+        ElseIf myCity = "Aurora, CO" And myAGI > 3000 Then
+            myLocalTax = 24
+        ElseIf myCity = "Greenwood Village, CO" And myAGI > 3000 Then
+            myLocalTax = 48
+        End If
+
+Dim myIncomeThousand As Double
+ElseIf myState = "CT" Then
+    If myIncome > 29000 And myIncome <= 43000 Then
+        myIncomeThousand = myIncome / 1000
+        myIncomeCorrect = Int(myIncomeThousand)
+        numberExempt = 42 - myIncomeCorrect
+        myStateExemption = 500 + numberExempt * 1000
+    ElseIf myIncome < 29000 Then
+        myStateExemption = 14500
+    ElseIf myIncome > 43000 Then
+        myStateExemption = 0
+    End If
+    myAGI = myIncome - myStateExemption - my401k - myHC - myWageWorks
+    If myAGI <= 10000 Then
+    myStateTax = 0.03 * myAGI
+    ElseIf myAGI > 10000 And myAGI <= 50000 Then
+    myStateTax = 0.05 * (myAGI - 10000) + 300
+    ElseIf myAGI <= 100000 And myAGI > 50000 Then
+    myStateTax = 0.055 * (myAGI - 50000) + 2300
+    ElseIf myAGI > 100000 And myAGI <= 200000 Then
+        myStateTax = 0.06 * (myAGI - 100000) + 5050
+    ElseIf myAGI > 200000 And myAGI <= 250000 Then
+        myStateTax = 0.065 * (myAGI - 200000) + 11050
+    ElseIf myAGI > 250000 And myAGI <= 500000 Then
+        myStateTax = 0.069 * (myAGI - 250000) + 14300
+    ElseIf myAGI > 500000 Then
+        myStateTax = 0.0699 * (myAGI - 500000) + 31550
+    End If
+
+ElseIf myState = "DC" Or myTaxState = "DC" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 5200 Then
+                myStateDeduct = 5200
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 5200
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 2200
+    End If
+    myAGI = myIncome - myStateDeduct - myStateExemption - my401k - myHC - myWageWorks
+    If myAGI <= 10000 Then
+        myStateTax = 0.04 * myAGI
+    ElseIf myAGI > 10000 And myAGI <= 40000 Then
+        myStateTax = 0.06 * (myAGI - 10000) + 400
+    ElseIf myAGI > 40000 And myAGI <= 60000 Then
+        myStateTax = 0.07 * (myAGI - 40000) + 2200
+    ElseIf myAGI > 60000 And myAGI <= 350000 Then
+        myStateTax = 0.085 * (myAGI - 60000) + 3600
+    ElseIf myAGI > 350000 Then
+        myStateTax = 0.089 * (myAGI - 350000) + 28250
+    End If
+
+ElseIf myState = "DE" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6500 Then
+                myStateDeduct = 6500
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 6500
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 110
+    End If
+    myAGI = myIncome - myStateDeduct - myStateExemption - my401k - myHC - myWageWorks
+    If myAGI < 2000 Then
+        myStateTax = 0
+    ElseIf myAGI <= 5000 And myAGI > 2000 Then
+        myStateTax = 0.022 * (myAGI - 2000)
+    ElseIf myAGI <= 10000 And myAGI > 5000 Then
+        myStateTax = 0.039 * (myAGI - 5000) + 66
+    ElseIf myAGI <= 20000 And myAGI > 10000 Then
+        myStateTax = 0.048 * (myAGI - 10000) + 261
+    ElseIf myAGI <= 25000 And myAGI > 20000 Then
+        myStateTax = 0.052 * (myAGI - 20000) + 741
+    ElseIf myAGI <= 60000 And myAGI > 25000 Then
+        myStateTax = 0.055 * (myAGI - 25000) + 1001
+    ElseIf myAGI > 60000 Then
+        myStateTax = 0.066 * (myAGI - 60000) + 2926
+    End If
+    If myResCity = "Wilmington, DE" Or myCity = "Wilmington, DE" Then
+        myLocalTax = 0.0125 * (myIncome - my401k - myHC - myWageWorks)
+    End If
+
+ElseIf myState = "FL" Then
+    myStateTax = 0
+
+ElseIf myState = "GA" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 2300 Then
+                myStateDeduct = 2300
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 2300
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 2700
+    End If
+    myAGI = myIncome - myStateDeduct - myStateExemption - my401k - myHC - myWageWorks
+    If myAGI <= 750 Then
+        myStateTax = 0.01 * myAGI
+    ElseIf myAGI > 750 And myAGI <= 2250 Then
+        myStateTax = 0.02 * (myAGI - 750) + 7.5
+    ElseIf myAGI > 2250 And myAGI <= 3750 Then
+        myStateTax = 0.03 * (myAGI - 2250) + 37.5
+    ElseIf myAGI > 3750 And myAGI <= 5250 Then
+        myStateTax = 0.04 * (myAGI - 3750) + 82.5
+    ElseIf myAGI > 5250 And myAGI <= 7000 Then
+        myStateTax = 0.05 * (myAGI - 5250) + 142.5
+    ElseIf myAGI > 7000 Then
+        myStateTax = 0.06 * (myAGI - 7000) + 230
+    End If
+
+ElseIf myState = "HI" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 2200 Then
+                myStateDeduct = 2200
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 2200
+    End If
+   myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
+    If myAGI <= 2400 Then
+        myStateTax = 0.014 * myAGI
+    ElseIf myAGI <= 4800 And myAGI > 2400 Then
+        myStateTax = 0.032 * (myAGI - 2400) + 33.6
+    ElseIf myAGI <= 9600 And myAGI > 4800 Then
+        myStateTax = 0.055 * (myAGI - 4800) + 110.4
+    ElseIf myAGI <= 14400 And myAGI > 9600 Then
+        myStateTax = 0.064 * (myAGI - 9600) + 374.4
+    ElseIf myAGI <= 19200 And myAGI > 14400 Then
+        myStateTax = 0.068 * (myAGI - 14400) + 681.6
+    ElseIf myAGI <= 24000 And myAGI > 19200 Then
+        myStateTax = 0.072 * (myAGI - 19200) + 1027.2
+    ElseIf myAGI <= 36000 And myAGI > 24000 Then
+        myStateTax = 0.076 * (myAGI - 24000) + 1372.8
+    ElseIf myAGI <= 48000 And myAGI > 36000 Then
+        myStateTax = 0.079 * (myAGI - 36000) + 2284.8
+    ElseIf myAGI <= 150000 And myAGI > 48000 Then
+        myStateTax = 0.0825 * (myAGI - 48000) + 3232.8
+    ElseIf myAGI <= 175000 And myAGI > 150000 Then
+        myStateTax = 0.09 * (myAGI - 150000) + 11647.8
+    ElseIf myAGI <= 200000 And myAGI > 175000 Then
+        myStateTax = 0.1 * (myAGI - 175000) + 13897.8
+    ElseIf myAGI > 200000 Then
+        myStateTax = 0.11 * (myAGI - 200000) + 16387.8
+    End If
+
+ElseIf myState = "ID" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT 'follows federal standard deduction
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - myStateExemption - myStateDeduct - my401k - myHC - myWageWorks
+    If myAGI <= 1453 Then
+        myStateTax = 0.016 * myAGI
+    ElseIf myAGI <= 2907 And myAGI > 1453 Then
+        myStateTax = 0.036 * (myAGI - 1453) + 23.25
+    ElseIf myAGI <= 4361 And myAGI > 2907 Then
+        myStateTax = 0.041 * (myAGI - 2907) + 75.592
+    ElseIf myAGI <= 5815 And myAGI > 4361 Then
+        myStateTax = 0.051 * (myAGI - 4361) + 135.21
+    ElseIf myAGI <= 7269 And myAGI > 5815 Then
+        myStateTax = 0.061 * (myAGI - 5815) + 209.36
+    ElseIf myAGI <= 10904 And myAGI > 7269 Then
+        myStateTax = 0.071 * (myAGI - 7269) + 467.45
+    ElseIf myAGI > 10904 Then
+        myStateTax = 0.074 * (myAGI - 10904) + 725.53
+    End If
+
+ElseIf myState = "IL" Then
+    If Exempt = 1 Then
+        myStateExemption = 2125
+    End If
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - myStateDeduct - myStateExemption - my401k - myHC - myWageWorks
+    myStateTax = 0.0495 * myAGI
+
+
+ElseIf myState = "IN" Then
+    MsgBox "Please note that each county in Indiana has its own local tax rate, and these taxes (except for Indianapolis's local resident tax, which is included) are not included in this macro.", vbOKOnly
+    myStateDeduct = InputBox("In Indiana, there is no standard deduction. Please enter the amount that you plan to claim as an itemized deduction (include your renter's deduction).")
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
+    myStateTax = 0.0323 * myAGI
+    If myResCity = "Indianapolis, IN" Then
+    myLocalTax = 0.0162 * myAGI
+    End If
+
+ElseIf myState = "IA" Then
+    MsgBox "Please note that 666 of Iowa's school districts charge a surtax ranging from 1 to 20% of state tax owed. This was not included in the macro for simplicity.", vbOKOnly
+    mystatededuct_prior = InputBox("In Iowa, the total deduction is equal to itemized deductions and a standard deduction. Please enter the amount that you plan to claim as an itemized deduction (do not include the SALT deduction, and do include your renter's deduction).")
+    myStateDeduct = mystatededuct_prior + 1950
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
+    If myAGI <= 1554 Then
+        myStateTax = 0.0036 * myAGI
+    ElseIf myAGI > 1554 And myAGI <= 3108 Then
+        myStateTax = 0.0072 * (myAGI - 1554) + 5.28
+    ElseIf myAGI > 3108 And myAGI <= 6216 Then
+        myStateTax = 0.0243 * (myAGI - 3108) + 16.47
+    ElseIf myAGI > 6216 And myAGI <= 13896 Then
+        myStateTax = 0.045 * (myAGI - 6216) + 91.99
+    ElseIf myAGI > 13896 And myAGI <= 23310 Then
+        myStateTax = 0.0612 * (myAGI - 13896) + 437.6
+    ElseIf myAGI > 23310 And myAGI <= 31080 Then
+        myStateTax = 0.0648 * (myAGI - 23310) + 1013.74
+    ElseIf myAGI > 31080 And myAGI <= 46620 Then
+        myStateTax = 0.068 * (myAGI - 31080) + 1973.56
+    ElseIf myAGI > 46620 And myAGI <= 69930 Then
+        myStateTax = 0.0792 * (myAGI - 46620) + 3558.64
+    ElseIf myAGI > 69930 Then
+        myStateTax = 0.0898 * (myAGI - 69930) + 5404.79
+    End If
+
+ElseIf myState = "KS" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 3000 Then
+                myStateDeduct = 3000
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 3000
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 2250
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 15000 Then
+        myStateTax = 0.027 * (myAGI)
+    ElseIf myAGI > 15000 Then
+        myStateTax = 0.046 * (myAGI - 15000) + 405
+    End If
+
+ElseIf myState = "KY" Then
+    MsgBox "Please note that Kentucky's local governments charge an occupational tax ranging from 0.5-2% of total income. This was not included in the macro for simplicity.", vbOKOnly
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 20
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 3000 Then
+        myStateTax = 0.02 * (myAGI)
+    ElseIf myAGI > 3000 And myAGI <= 4000 Then
+        myStateTax = 0.03 * (myAGI - 3000) + 60
+    ElseIf myAGI <= 5000 And myAGI > 4000 Then
+        myStateTax = 0.04 * (myAGI - 4000) + 90
+    ElseIf myAGI <= 8000 And myAGI > 5000 Then
+        myStateTax = 0.05 * (myAGI - 5000) + 130
+    ElseIf myAGI <= 75000 And myAGI > 8000 Then
+        myStateTax = 0.058 * (myAGI - 8000) + 280
+    ElseIf myAGI > 75000 Then
+        myStateTax = 0.06 * (myAGI - 75000) + 4166
+    End If
+
+ElseIf myState = "LA" Then
+    If Exempt = 1 And (myItemizedDeduct - mySALT) <= 4500 Then
+        myStateDeduct = 4500 'Louisiana has a combined personal exemption-standard deduction thing going on
+    ElseIf Exempt = 0 Or (myItemizedDeduct - mySALT) > 4500 Then
+        myStateDeduct = InputBox("Please enter the amount that you are able to claim as an itemized deduction, excluding any state or local tax deductions.")
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
+    If myAGI <= 12500 Then
+        myStateTax = 0.02 * (myAGI)
+    ElseIf myAGI > 12500 And myAGI < 50000 Then
+        myStateTax = 0.04 * (myAGI - 12500) + 250
+    ElseIf myAGI > 50000 Then
+        myStateTax = 0.06 * (myAGI - 50000) + 1750
+    End If
+
+ElseIf myState = "ME" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 21050 Then
+        myStateTax = 0.058 * (myAGI)
+    ElseIf myAGI > 21050 And myAGI <= 37500 Then
+        myStateTax = 0.0675 * (myAGI - 21050) + 1219.16
+    ElseIf myAGI > 37500 Then
+        myStateTax = 0.0715 * (myAGI - 37500) + 2329.54
+    End If
+
+ElseIf myState = "MD" Then
+    MsgBox "Please note that Maryland's local governments charge an income tax ranging from 1-3% of total income. This was not included in the macro for simplicity.", vbOKOnly
+    If myIncome <= 100000 Then
+        myStateExemption = 3200
+    ElseIf myIncome > 100000 And myIncome <= 125000 Then
+        myStateExemption = 1600
+    ElseIf myIncome > 125000 And myIncome <= 150000 Then
+        myStateExemption = 800
+    ElseIf myIncome > 150000 Then
+        myStateExemption = 0
+    End If
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 1000 Then
+        myStateTax = 0.02 * myAGI
+    ElseIf myAGI > 1000 And myAGI <= 2000 Then
+        myStateTax = 0.03 * (myAGI - 1000) + 20
+    ElseIf myAGI > 2000 And myAGI <= 3000 Then
+        myStateTax = 0.04 * (myAGI - 2000) + 50
+    ElseIf myAGI > 3000 And myAGI <= 100000 Then
+        myStateTax = 0.0475 * (myAGI - 3000) + 90
+    ElseIf myAGI > 100000 And myAGI <= 125000 Then
+        myStateTax = 0.05 * (myAGI - 100000) + 4697.5
+    ElseIf myAGI > 125000 And myAGI <= 150000 Then
+        myStateTax = 0.0525 * (myAGI - 125000) + 5947.5
+    ElseIf myAGI > 150000 And myAGI <= 250000 Then
+        myStateTax = 0.055 * (myAGI - 150000) + 7260
+    ElseIf myAGI > 250000 Then
+        myStateTax = 0.0575 * (myAGI - 250000) + 12760
+    End If
+
+ElseIf myState = "MA" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+    ElseIf deductType = 2 Then
+        myStateDeduct = InputBox("Massachusetts does not have a standard deduction. Please enter the amount you plan to claim as itemized deductions in your MA tax return. Include your rental deduction (50% of rent up to $3000).")
+    End If
+    If Exempt = 1 Then
+    myStateExemption = 4400
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    myStateTax = 0.051 * myAGI
+
+ElseIf myState = "MI" Then
+    If Exempt = 1 Then
+        myStateExemption = 4000
+    End If
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myResCity = "Albion, MI" Or myResCity = "Battle Creek, MI" Or myResCity = "Big Rapids, MI" Or myResCity = "Flint, MI" Or myResCity = "Grayling, MI" Or myResCity = "Hamtramck, MI" Or myResCity = "Hudson, MI" Or myResCity = "Ionia, MI" Or myResCity = "Jackson, MI" Or myResCity = "Lansing, MI" Or myResCity = "Lapeer, MI" Or myResCity = "Muskegon, MI" Or myResCity = "Muskegon Heights, MI" Or myResCity = "Pontiac, MI" Or myResCity = "Port Huron, MI" Or myResCity = "Portland, MI" Or myResCity = "Springfield, MI" Or myResCity = "Walker, MI" Then
+        myLocalTax = 0.01 * myAGI
+    ElseIf myResCity = "Detroit, MI" Then
+        myLocalTax = 0.024 * myAGI
+    ElseIf myResCity = "Grand Rapids, MI" Or myResCity = "Saginaw, MI" Then
+        myLocalTax = 0.015 * myAGI
+    ElseIf myResCity = "Highland Park, MI" Then
+        myLocalTax = 0.02 * myAGI
+    ElseIf myCity = "Albion, MI" Or myCity = "Battle Creek, MI" Or myCity = "Big Rapids, MI" Or myCity = "Flint, MI" Or myCity = "Grayling, MI" Or myCity = "Hamtramck, MI" Or myCity = "Hudson, MI" Or myCity = "Ionia, MI" Or myCity = "Jackson, MI" Or myCity = "Lansing, MI" Or myCity = "Lapeer, MI" Or myCity = "Muskegon, MI" Or myCity = "Muskegon Heights, MI" Or myCity = "Pontiac, MI" Or myCity = "Port Huron, MI" Or myCity = "Portland, MI" Or myCity = "Springfield, MI" Or myCity = "Walker, MI" Then
+        If diffcity = 1 Then
+            myLocalTax = 0.005 * myAGI
+        End If
+    ElseIf myCity = "Detroit, MI" And diffcity = 1 Then 'Non-residential taxes are half of residential local income taxes
+        myLocalTax = 0.012 * myAGI
+    ElseIf diffcity = 1 And myCity = "Grand Rapids, MI" Or myResCity = "Saginaw, MI" And diffcity = 1 Then
+        myLocalTax = 0.075 * myAGI
+    ElseIf myCity = "Highland Park, MI" And diffcity = 1 Then
+        myLocalTax = 0.01 * myAGI
+    End If
+    myStateTax = 0.0425 * myAGI
+
+ElseIf myState = "MN" Then
+    If Exempt = 1 Then
+        myStateExemption = 4000
+    End If
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 25180 Then
+        myStateTax = 0.0535 * myAGI
+    ElseIf myAGI > 25180 And myAGI <= 82740 Then
+        myStateTax = 0.0705 * (myAGI - 25180) + 1347.13
+    ElseIf myAGI > 82740 And myAGI <= 155650 Then
+        myStateTax = 0.0785 * (myAGI - 82740) + 5405.11
+    ElseIf myAGI > 155650 Then
+        myStateTax = 0.0985 * (myAGI - 155650) + 11128.55
+    End If
+
+ElseIf myState = "MS" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 2300 Then
+                myStateDeduct = 2300
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 2300
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 4000
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 5000 Then
+        myStateTax = 0.03 * (myAGI)
+    ElseIf myAGI > 5000 And myAGI <= 10000 Then
+        myStateTax = 0.04 * (myAGI - 5000) + 150
+    ElseIf myAGI > 10000 Then
+        myStateTax = 0.05 * (myAGI - 10000) + 350
+    End If
+
+ElseIf myState = "MO" Then
+    If deductType = 1 Then
+        If myFederalTax <= 5000 Then
+            myStateDeduct = myItemizedDeduct - mySALT + myFederalTax
+        ElseIf myFederalTax > 5000 Then
+            myStateDeduct = myItemizedDeduct - mySALT + 5000
+        End If
+        If myStateDeduct < 6200 Then
+                myStateDeduct = 6200
+        End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 6200
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 2100
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 1000 Then
+        myStateTax = 0.015 * myAGI
+    ElseIf myAGI > 1000 And myAGI <= 2000 Then
+        myStateTax = 0.02 * (myAGI - 1000) + 15
+    ElseIf myAGI > 2000 And myAGI <= 3000 Then
+        myStateTax = 0.025 * (myAGI - 2000) + 35
+    ElseIf myAGI > 3000 And myAGI <= 4000 Then
+        myStateTax = 0.03 * (myAGI - 3000) + 60
+    ElseIf myAGI > 4000 And myAGI <= 5000 Then
+        myStateTax = 0.035 * (myAGI - 4000) + 90
+    ElseIf myAGI > 5000 And myAGI <= 6000 Then
+        myStateTax = 0.04 * (myAGI - 5000) + 125
+    ElseIf myAGI > 6000 And myAGI <= 7000 Then
+        myStateTax = 0.045 * (myAGI - 6000) + 165
+    ElseIf myAGI > 7000 And myAGI <= 8000 Then
+        myStateTax = 0.05 * (myAGI - 7000) + 165 + 45
+    ElseIf myAGI > 8000 And myAGI <= 9000 Then
+        myStateTax = 0.055 * (myAGI - 8000) + 165 + 95
+    ElseIf myAGI > 9000 Then
+        myStateTax = 0.06 * (myAGI - 9000) + 165 + 95 + 55
+    End If
+
+    If myCity = "St. Louis, MO" Or myResCity = "St. Louis, MO" Or myCity = "Kansas City, MO" Or myResCity = "Kansas City, MO" Then
+        myLocalTax = 0.01 * myIncome
+    End If
+
+ElseIf myState = "MT" Then
+    If deductType = 1 Then
+        If myFederalTax <= 5000 Then
+            myStateDeduct = myItemizedDeduct - mySALT + myFederalTax
+        ElseIf myFederalTax > 5000 Then
+            myStateDeduct = myItemizedDeduct - mySALT + 5000
+        End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 0.2 * myAGI
+        If myStateDeduct < 3880 Then
+            myStateDeduct = 3880
+        ElseIf myStateDeduct > 4370 Then
+            myStateDeduct = 4370
+        End If
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 2330
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI < 2800 Then
+        myStateTax = 0.01 * myAGI
+    ElseIf myAGI > 2800 And myAGI <= 5000 Then
+        myStateTax = 0.02 * (myAGI - 2800) + 28
+    ElseIf myAGI > 5000 And myAGI <= 7600 Then
+        myStateTax = 0.03 * (myAGI - 5000) + 72
+    ElseIf myAGI > 7600 And myAGI <= 10300 Then
+        myStateTax = 0.04 * (myAGI - 7600) + 150
+    ElseIf myAGI > 10300 And myAGI <= 13300 Then
+        myStateTax = 0.05 * (myAGI - 10300) + 258
+    ElseIf myAGI > 13300 And myAGI <= 17100 Then
+        myStateTax = 0.06 * (myAGI - 13300) + 408
+    ElseIf myAGI > 17100 Then
+        myStateTax = 0.069 * (myAGI - 17100) + 636
+    End If
+
+ElseIf myState = "NE" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
+    If myAGI <= 3060 Then
+        myStateTax = 0.0246 * myAGI
+    ElseIf myAGI > 3060 And myAGI <= 18370 Then
+        myStateTax = 0.0351 * (myAGI - 3060) + 75.28
+    ElseIf myAGI > 18370 And myAGI <= 29590 Then
+        myStateTax = 0.0501 * (myAGI - 18370) + 612.68
+    ElseIf myAGI > 29590 Then
+        myStateTax = 0.0684 * (myAGI - 29590) + 1174.78
+    End If
+    If Exempt = 1 Then
+        myStateTax = myStateTax - 130
+    End If
+
+ElseIf myState = "NV" Then
+    myStateTax = 0
+
+ElseIf myState = "NH" Then
+    MsgBox "Note that New Hampshire does not tax income on wages, but it does tax income on interest and dividends, which is not being calculcated here, for simplicity.", vbOKOnly
+    myStateTax = 0
+
+ElseIf myState = "NJ" Then
+    myStateDeduct = InputBox("New Jersey does not have a standard deduction, and their itemized deductions are less than federal itemized deductions. Please enter the amount that you can deduct on your NJ State taxes. If nothing, enter 0.")
+    If Exempt = 1 Then
+        myStateExemption = 1000
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 20000 Then
+        myStateTax = 0.014 * myAGI
+    ElseIf myAGI > 20000 And myAGI <= 35000 Then
+        myStateTax = 0.0175 * (myAGI - 20000) + 280
+    ElseIf myAGI > 35000 And myAGI <= 40000 Then
+        myStateTax = 0.035 * (myAGI - 35000) + 542.5
+    ElseIf myAGI > 40000 And myAGI <= 75000 Then
+        myStateTax = 0.0637 * (myAGI - 40000) + 717.5
+    ElseIf myAGI > 75000 And myAGI <= 500000 Then
+        myStateTax = 0.0637 * (myAGI - 75000) + 2555
+    ElseIf myAGI > 500000 Then
+        myStateTax = 0.0897 * (myAGI - 500000) + 29627.5
+    End If
+    
+ElseIf myState = "NM" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    If Exempt = 1 And myIncome <= 36667 Then
+        myStateExemption = myExemption + 2500 'low-income extra exemption
+    End If
+     myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 5500 Then
+        myStateTax = 0.017 * myAGI
+    ElseIf myAGI > 5500 And myAGI <= 11000 Then
+        myStateTax = 0.032 * (myAGI - 5500) + 93.5
+    ElseIf myAGI > 11000 And myAGI <= 16000 Then
+        myStateTax = 0.047 * (myAGI - 11000) + 269.5
+    ElseIf myAGI > 16000 Then
+        myStateTax = 0.049 * (myAGI - 16000) + 504.5
+    End If
+    
+ElseIf myState = "NY" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 7900 Then
+                myStateDeduct = 7900
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 7900
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
+    If myAGI < 8500 Then
+        myStateTax = 0.04 * myAGI
+    ElseIf myAGI > 8500 And myAGI <= 11700 Then
+        myStateTax = 0.045 * (myAGI - 8500) + 340
+    ElseIf myAGI > 11700 And myAGI <= 13900 Then
+        myStateTax = 0.0525 * (myAGI - 11700) + 484
+    ElseIf myAGI > 13900 And myAGI <= 21400 Then
+        myStateTax = 0.059 * (myAGI - 13900) + 600
+    ElseIf myAGI > 21400 And myAGI <= 80650 Then
+        myStateTax = 0.0633 * (myAGI - 21400) + 1042 'Tax rate goes down by 0.12% each year beginning in 2018
+    ElseIf myAGI > 80650 And myAGI <= 215400 Then
+        myStateTax = 0.0657 * (myAGI - 80650) + 4775 'Tax rate goes down by 0.08% each year beginning in 2018
+    ElseIf myAGI > 215400 And myAGI <= 1077550 Then
+        myStateTax = 0.0685 * (myAGI - 215400) + 13628
+    ElseIf myAGI > 1077550 Then
+        myStateTax = 0.0882 * (myAGI - 1062650) + 72685
+    End If
+    If myResCity = "New York, NY" Or myResCity = "New York City, NY" Or myResCity = "Brooklyn, NY" Or myResCity = "Bronx, NY" Or myResCity = "Staten Island, NY" Or myResCity = "Queens, NY" Then 'use NYS taxable income
+        myAGI = myAGI + my401k 'I believe 401k is taxed in NYC, not sure
+        If myAGI <= 12000 Then
+            myLocalTax = 0.03078 * myAGI
+        ElseIf myAGI > 12000 And myAGI <= 25000 Then
+            myLocalTax = 0.03762 * (myAGI - 12000) + 369
+        ElseIf myAGI > 25000 And myAGI <= 50000 Then
+            myLocalTax = 0.03819 * (myAGI - 25000) + 858
+        ElseIf myAGI > 50000 Then
+            myLocalTax = 0.03876 * (myAGI - 50000) + 1813
+        End If
+    End If
+    If myResCity = "Yonkers, NY" Then
+        myLocalTax = 0.1 * myStateTax
+    End If
+
+ElseIf myState = "NC" Then
+    If deductType = 1 Then
+        myStateDeduct = InputBox("In North Carolina, taxpayers can only claim itemized deductions for charitable donations, mortgage interest and property taxes. Please enter the total which you plan to claim for these 3 deductions.")
+            If myStateDeduct <= 8750 Then
+                myStateDeduct = 8750
+            End If
+    ElseIf deductType = 2 Then
+        myStateDeduct = 8750
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
+    myStateTax = 0.05499 * myAGI
+    
+ElseIf myState = "ND" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct <= 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 37450 Then
+        myStateTax = 0.011 * myAGI
+    ElseIf myAGI <= 90750 And myAGI > 37450 Then
+        myStateTax = 0.0204 * (myAGI - 37450) + 411.95
+    ElseIf myAGI <= 189300 And myAGI > 90750 Then
+        myStateTax = 0.0227 * (myAGI - 90750) + 1499.27
+    ElseIf myAGI <= 411500 And myAGI > 189300 Then
+        myStateTax = 0.0264 * (myAGI - 189300) + 3736.355
+    ElseIf myAGI > 411500 Then
+        myStateTax = 0.029 * (myAGI - 411500) + 9602.44
+    End If
+
+ElseIf myState = "OH" Then
+    MsgBox "Please note that Ohio's cities charge flat taxes on income ranging from .40 to 3%. Also, each school district can choose to charge an income tax. These taxes were not included in the macro for simplicity (except for Athens, which was included).", vbOKOnly
+    If Exempt = 1 Then
+        If myIncome <= 40000 Then
+            myStateExemption = 2200
+        ElseIf myIncome > 40000 And myIncome <= 80000 Then
+            myStateExemption = 1950
+        ElseIf myIncome > 80000 Then
+            myStateExemption = 1700
+        End If
+    End If
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct <= 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 5250 Then
+        myStateTax = 0.00495 * myAGI
+    ElseIf myAGI <= 10500 And myAGI > 5250 Then
+        myStateTax = 0.0099 * (myAGI - 5250) + 25.99
+    ElseIf myAGI <= 15800 And myAGI > 10500 Then
+        myStateTax = 0.0198 * (myAGI - 10500) + 77.97
+    ElseIf myAGI <= 21100 And myAGI > 15800 Then
+        myStateTax = 0.02476 * (myAGI - 15800) + 182.91
+    ElseIf myAGI <= 42100 And myAGI > 21100 Then
+        myStateTax = 0.02969 * (myAGI - 21100) + 314.14
+    ElseIf myAGI <= 84200 And myAGI > 42100 Then
+        myStateTax = 0.03465 * (myAGI - 42100) + 937.63
+    ElseIf myAGI <= 105300 And myAGI > 84200 Then
+        myStateTax = 0.0396 * (myAGI - 84200) + 2396.4
+    ElseIf myAGI <= 210600 And myAGI > 105300 Then
+        myStateTax = 0.04597 * (myAGI - 105300) + 3231.96
+    ElseIf myAGI > 210600 Then
+        myStateTax = 0.04997 * (myAGI - 210600) + 8072.6
+    End If
+    If myResCity = "Athens, OH" Or myCity = "Athens, OH" Then
+        myLocalTax = 0.0185 * myIncome + 0.01 * myIncome 'Local Income Tax and School District Tax
+    End If
+
+ElseIf myState = "OK" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct <= 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 1000
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 1000 Then
+        myStateTax = 0.005 * myAGI
+    ElseIf myAGI <= 2500 And myAGI > 1000 Then
+        myStateTax = 0.1 * (myAGI - 1000) + 5
+    ElseIf myAGI <= 3750 And myAGI > 2500 Then
+        myStateTax = 0.2 * (myAGI - 2500) + 20
+    ElseIf myAGI <= 4900 And myAGI > 3750 Then
+        myStateTax = 0.3 * (myAGI - 3750) + 45
+    ElseIf myAGI <= 7200 And myAGI > 4900 Then
+        myStateTax = 0.4 * (myAGI - 4900) + 114
+    ElseIf myAGI <= 8700 And myAGI > 7200 Then
+        myStateTax = 0.5 * (myAGI - 7200) + 206
+    ElseIf myAGI > 8700 Then
+        myStateTax = 0.525 * (myAGI - 8700) + 281
+    End If
+    
+ElseIf myState = "OR" Then
+    If deductType = 1 Then
+    myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    If myFederalTax <= 6350 Then
+            myStateDeduct = myStateDeduct + myFederalTax
+    ElseIf myFederalTax > 6350 Then
+            myStateDeduct = myStateDeduct + 6350
+    End If
+    myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
+    If myAGI <= 3350 Then
+        myStateTax = myAGI * 0.05
+    ElseIf myAGI <= 8400 And myAGI > 3350 Then
+        myStateTax = 0.07 * (myAGI - 3350) + 167.5
+    ElseIf myAGI <= 125000 And myAGI > 8400 Then
+        myStateTax = 0.09 * (myAGI - 8400) + 521
+    ElseIf myAGI > 125000 Then
+        myStateTax = 0.099 * (myAGI - 125000) + 11015
+    End If
+    
+    
+ElseIf myState = "PA" Then
+    MsgBox "Note that Pennsylvania's cities collect their own taxes. For simplicity purposes, only Philadelphia and Pittsburg's taxes are included in this macro."
+    myAGI = myIncome - my401k - myHC - myWageWorks
+    myStateTax = 0.0307 * myAGI
+    If myResCity = "Philadelphia, PA" Then
+        myLocalTax = 0.038907 * myIncome
+    End If
+    If myCity = "Philadelphia, PA" And diffcity = 1 Then
+        myLocalTax = 0.034654 * myIncome
+    End If
+    If myResCity = "Pittsburgh, PA" Then
+        myLocalTax = 0.03 * myIncome
+    End If
+    If myCity = "Pittsburgh, PA" And diffcity = 1 Then
+        myLocalTax = 0.01 * myIncome
+    End If
+    
+ElseIf myState = "RI" Then
+    myStateDeduct = 8275
+    If Exempt = 1 Then
+        myStateExemption = 3850
+    End If
+    myAGI = myIncome - my401k - myHC - myWageWorks - myStateDeduct - myStateExemption
+    If myAGI <= 60550 Then
+        myStateTax = 0.0375 * myAGI
+    ElseIf myAGI <= 137650 And myAGI > 60550 Then
+        myStateTax = 0.0475 * (myAGI - 60550) + 2456.25
+    ElseIf myAGI > 137650 Then
+        myStateTax = 0.0599 * (myAGI - 137650) + 6118.5
+    End If
+
+ElseIf myState = "SC" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 4000
+    End If
+    myAGI = myIncome - my401k - myHC - myWageWorks - myStateDeduct - myStateExemption
+    If myAGI > 2910 And myAGI <= 5820 Then
+        myStateTax = 0.03 * (myAGI - 2910)
+    ElseIf myAGI <= 8730 And myAGI > 5820 Then
+        myStateTax = 0.04 * (myAGI - 5820) + 87.3
+    ElseIf myAGI <= 11640 And myAGI > 8730 Then
+        myStateTax = 0.05 * (myAGI - 8730) + 203.7
+    ElseIf myAGI <= 14550 And myAGI > 11640 Then
+        myStateTax = 0.06 * (myAGI - 11640) + 349.2
+    ElseIf myAGI > 14550 Then
+        myStateTax = 0.07 * (myAGI - 14550) + 523.8
+    End If
+
+ElseIf myState = "SD" Then
+    myStateTax = 0
+    myLocalTax = 0
+
+ElseIf myState = "TN" Then
+MsgBox "Please note that Tennessee does not collect tax on wages and salaries, but it does on interest and dividends. This macro does not calculate those.", vbOKOnly
+
+ElseIf myState = "TX" Then
+    myStateTax = 0
+    myLocalTax = 0
+
+ElseIf myState = "UT" Then
+    If Exempt = 1 Then
+        myStateExemption = 3037.5
+    End If
+    Dim myTTC As Long
+    If deductType = 1 Then
+        myTTC = 0.06 * (myDeduct - mySALT) + 3037.5
+    ElseIf deductType = 2 Then
+        myTTC = 3418.5
+    End If
+    myAGI = myIncome - my401k - myHC - myWageWorks - myStateExemption
+    myStateTax = 0.05 * myAGI
+    myStateTax = myStateTax - myTTC
+        
+ElseIf myState = "VT" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+            If myStateDeduct < 6350 Then
+                myStateDeduct = 6350
+            End If
+    End If
+    myAGI = myIncome - my401k - myHC - myWageWorks - myStateExemption - myStateDeduct
+    If myAGI <= 37650 Then
+        myStateTax = 0.0355 * myAGI
+    ElseIf myAGI <= 91150 And myAGI > 37650 Then
+        myStateTax = 0.068 * (myAGI - 37650) + 1336.58
+    ElseIf myAGI <= 190150 And myAGI > 91150 Then
+        myStateTax = 0.078 * (myAGI - 91150) + 4974.58
+    ElseIf myAGI <= 413350 And myAGI > 190150 Then
+        myStateTax = 0.088 * (myAGI - 190150) + 12696.58
+    ElseIf myAGI > 413350 Then
+        myStateTax = 0.0895 * (myAGI - 413350) + 32338.18
+    End If
+
+ElseIf myState = "VA" Then
+    If deductType = 1 Then
+        myStateDeduct = myItemizedDeduct - mySALT
+    ElseIf deductType = 2 Then
+        myStateDeduct = 3000
+    End If
+    If Exempt = 1 Then
+        myStateExemption = 930
+    End If
+    myAGI = myIncome - my401k - myHC - myWageWorks - myStateExemption - myStateDeduct
+    If myAGI <= 3000 Then
+        myStateTax = 0.02 * myAGI
+    ElseIf myAGI <= 5000 And myAGI > 3000 Then
+        myStateTax = 0.03 * (myAGI - 3000) + 60
+    ElseIf myAGI <= 17000 And myAGI > 5000 Then
+        myStateTax = 0.05 * (myAGI - 5000) + 120
+    ElseIf myAGI > 17000 Then
+        myStateTax = 0.0575 * (myAGI - 17000) + 720
+    End If
+
+ElseIf myState = "WA" Then
+    myStateTax = 0
+    myLocalTax = 0
+
+ElseIf myState = "WV" Then
+    If Exempt = 1 Then
+        myStateExemption = 2000
+    End If
+    myAGI = myIncome - my401k - myHC - myWageWorks - myStateExemption
+    If myAGI <= 10000 Then
+        myStateTax = 0 'low income earned income exclusion in WV
+    ElseIf myAGI <= 25000 And myAGI > 10000 Then
+        myStateTax = 0.4 * (myAGI - 10000) + 300
+    ElseIf myAGI <= 40000 And myAGI > 25000 Then
+        myStateTax = 0.045 * (myAGI - 25000) + 900
+    ElseIf myAGI <= 60000 And myAGI > 40000 Then
+        myStateTax = 0.06 * (myAGI - 40000) + 1575
+    ElseIf myAGI > 60000 Then
+        myStateTax = 0.065 * (myAGI - 60000) + 2775
+    End If
+
+ElseIf myState = "WI" Then
+MsgBox "Wisconsin is too complicated to enter in this macro. Figure it out your own damn self.", vbOKOnly
+
+ElseIf myState = "WY" Then
+    myLocalTax = 0
+    myStateTax = 0
+End If
+
+If myAGI < 0 Then
+    myStateTax = 0
+    myLocalTax = 0
+End If
+End Sub
