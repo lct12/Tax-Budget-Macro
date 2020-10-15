@@ -60,13 +60,13 @@ Sub budget_entire()
 '
 MsgBox "This Excel macro will help you calculate your estimated taxes, as well as create a budget based on your income. This macro assumes that you are single, with no dependents, are a W-2 employee (not self-employed) and live/earn income in the USA. This macro also does not take into account the Alternative Minimum Tax, the Pease Threshold phaseouts for exemptions and deductions, or any of the tax credits. Find a real accountant and/or lobby for tax reform.", vbOKOnly
 
-MsgBox "Please note that the federal portion of this macro has been updated for the 2018 tax year. However, state and local taxes may not be entirely accurate."
+MsgBox "Please note that the federal portion of this macro has been updated for the 2020 tax year. However, state and local taxes may not be entirely accurate (Notably, NY, CA and IL have been updated using 2019 tax brackets. Other states have not been updated since 2017."
 
 myIncome = InputBox("Enter your expected income for the year.")
 my401k_percent = InputBox("Enter the percentage of your income that you expect to contribute, pre-tax, to your 401k. Do not include the % symbol-enter 1% as 1, 2% as 2, etc.")
-myHC_month = InputBox("Enter the amount that you expect to contribute MONTHLY to your medical/dental/vision insurance premiums and your pre-tax health spending account (the latter must be < $283).)")
+myHC_month = InputBox("Enter the amount that you expect to contribute MONTHLY to your medical/dental/vision insurance premiums and your pre-tax health spending account (the latter must be < $296).)")
 Dim myWageWorks_month As Double
-myWageWorks_month = InputBox("Enter the amount which you plan to contribute MONTHLY pre-tax to a pre-tax commution account (<= 255).")
+myWageWorks_month = InputBox("Enter the amount which you plan to contribute MONTHLY pre-tax to a pre-tax commution account (<= 270).")
 myWageWorks = myWageWorks_month * 12
 myCity = Range("C2").Value
 myState = Range("A2").Value
@@ -83,7 +83,7 @@ myDeduct = myItemizedDeduct + myNonItemizedDeduct
 mySALT = InputBox("Enter the amount that you plan to claim as your state and local tax (SALT) deductions, if any. Note this now has a maximum of $10,000. If you do not plan to claim this deduction, enter 0.")
 
 ElseIf deductType = 2 Then
-myDeduct = 12000 + myNonItemizedDeduct 'This is taken from the IRS's standard deduction for single filers. Updated for 2018!
+myDeduct = 12400 + myNonItemizedDeduct 'This is taken from the IRS's standard deduction for single filers. Updated for 2020!
 End If
 
 myFederalDeduct = myDeduct - myNonItemizedDeduct
@@ -153,7 +153,7 @@ myDeduct = myItemizedDeduct + myNonItemizedDeduct
 mySALT = InputBox("Enter the amount that you plan to claim as your state and local tax (SALT) deductions, if any. If you do not plan to claim this deduction, enter 0.")
 
 ElseIf deductType = 2 Then
-myDeduct = 12000 + myNonItemizedDeduct 'This is taken from the IRS's standard deduction for single filers
+myDeduct = 12400 + myNonItemizedDeduct 'This is taken from the IRS's standard deduction for single filers
 End If
 
 myFederalDeduct = myDeduct - myNonItemizedDeduct
@@ -198,26 +198,26 @@ If myAGI < 0 Then
     myAGI = 0
 End If
 'Federal Taxation (state and local done in another macro)
-If myAGI <= 9525 Then
+If myAGI <= 9875 Then
 myFederalTax = 0.1 * myAGI
 
-ElseIf myAGI > 9525 And myAGI <= 38700 Then
-myFederalTax = 952.5 + 0.12 * (myAGI - 9525)
+ElseIf myAGI > 9875 And myAGI <= 40125 Then
+myFederalTax = 987.5 + 0.12 * (myAGI - 9875)
 
-ElseIf myAGI > 38700 And myAGI <= 82500 Then
-myFederalTax = 4453.5 + 0.22 * (myAGI - 38700)
+ElseIf myAGI > 40125 And myAGI <= 85525 Then
+myFederalTax = 4617.5 + 0.22 * (myAGI - 40125)
 
-ElseIf myAGI > 82500 And myAGI <= 157500 Then
-myFederalTax = 14089.5 + 0.24 * (myAGI - 82500)
+ElseIf myAGI > 85525 And myAGI <= 163300 Then
+myFederalTax = 14605.5 + 0.24 * (myAGI - 85525)
 
-ElseIf myAGI > 157500 And myAGI <= 200000 Then
-myFederalTax = 32089.5 + 0.32 * (myAGI - 157500)
+ElseIf myAGI > 163300 And myAGI <= 207350 Then
+myFederalTax = 33271.5 + 0.32 * (myAGI - 163300)
 
-ElseIf myAGI > 200000 And myAGI <= 500000 Then
-myFederalTax = 45689.5 + 0.35 * (myAGI - 200000)
+ElseIf myAGI > 207350 And myAGI <= 518400 Then
+myFederalTax = 47367.5 + 0.35 * (myAGI - 207350)
 
-ElseIf myAGI > 500000 Then
-myFederalTax = 150689.5 + 0.37 * (myAGI - 500000)
+ElseIf myAGI > 518400 Then
+myFederalTax = 156235 + 0.37 * (myAGI - 518400)
 End If
 
 
@@ -229,17 +229,17 @@ If stipendIncome = 1 Then
     myFICAIncome = myFICAIncome - myStipendIncome
 End If
 
-'FICA taxes; SS tax only applies to earnings under 128400; extra medicare tax is part of the ACA
+'FICA taxes; SS tax only applies to earnings under 137700; extra medicare tax is part of the ACA
 If myFICAIncome <= 200000 Then
     myMedicare = 0.0145 * myFICAIncome
 ElseIf myFICAIncome > 200000 Then
     myMedicare = 0.0235 * myFICAIncome
 End If
 
-If myFICAIncome <= 128400 Then
+If myFICAIncome <= 137700 Then
     mySS = 0.062 * myFICAIncome
-ElseIf myFICAIncome > 128400 Then
-    mySS = 7960.8
+ElseIf myFICAIncome > 137700 Then
+    mySS = 8537.4
 End If
 myFICA = mySS + myMedicare
 End Sub
@@ -643,33 +643,33 @@ ElseIf myState = "AR" Then
 ElseIf myState = "CA" Then
     If deductType = 1 Then
         myStateDeduct = myItemizedDeduct - mySALT
-            If myStateDeduct < 3992 Then
-                myStateDeduct = 3992
+            If myStateDeduct < 4537 Then
+                myStateDeduct = 4537
             End If
     ElseIf deductType = 2 Then
-        myStateDeduct = 3992
+        myStateDeduct = 4537
     End If
     myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
-    If myAGI <= 7850 Then
+    If myAGI <= 8809 Then
         myStateTax = 0.01 * myAGI
-    ElseIf myAGI <= 18610 And myAGI > 7850 Then
-        myStateTax = 0.02 * (myAGI - 7850) + 78.5
-    ElseIf myAGI <= 29372 And myAGI > 18610 Then
-        myStateTax = 0.04 * (myAGI - 18610) + 293.7
-    ElseIf myAGI <= 40773 And myAGI > 29372 Then
-        myStateTax = 0.06 * (myAGI - 29372) + 724.18
-    ElseIf myAGI <= 51530 And myAGI > 40773 Then
-        myStateTax = 0.08 * (myAGI - 40773) + 1408.24
-    ElseIf myAGI <= 263222 And myAGI > 51530 Then
-        myStateTax = 0.093 * (myAGI - 51530) + 2408.64
-    ElseIf myAGI <= 315866 And myAGI > 263222 Then
-        myStateTax = 0.103 * (myAGI - 263222) + 22095.98
-    ElseIf myAGI <= 526443 And myAGI > 315866 Then
-        myStateTax = 0.113 * (myAGI - 315866) + 27518.33
-    ElseIf myAGI <= 1000000 And myAGI > 526443 Then
-        myStateTax = 0.123 * (myAGI - 526443) + 51313.53
+    ElseIf myAGI <= 20883 And myAGI > 8809 Then
+        myStateTax = 0.02 * (myAGI - 8809) + 88.09
+    ElseIf myAGI <= 32960 And myAGI > 20883 Then
+        myStateTax = 0.04 * (myAGI - 20883) + 329.57
+    ElseIf myAGI <= 45753 And myAGI > 32960 Then
+        myStateTax = 0.06 * (myAGI - 32960) + 812.65
+    ElseIf myAGI <= 57824 And myAGI > 45753 Then
+        myStateTax = 0.08 * (myAGI - 45753) + 1580.23
+    ElseIf myAGI <= 295373 And myAGI > 57824 Then
+        myStateTax = 0.093 * (myAGI - 57824) + 2545.91
+    ElseIf myAGI <= 354445 And myAGI > 295373 Then
+        myStateTax = 0.103 * (myAGI - 295373) + 24637.97
+    ElseIf myAGI <= 590742 And myAGI > 354445 Then
+        myStateTax = 0.113 * (myAGI - 354445) + 30722.39
+    ElseIf myAGI <= 1000000 And myAGI > 590742 Then
+        myStateTax = 0.123 * (myAGI - 590742) + 57423.95
     ElseIf myAGI > 1000000 Then
-        myStateTax = 0.133 * (myAGI - 1000000) + 109561.04
+        myStateTax = 0.133 * (myAGI - 1000000) + 107762.68
     End If
 
 ElseIf myState = "CO" Then
@@ -860,15 +860,10 @@ ElseIf myState = "ID" Then
 
 ElseIf myState = "IL" Then
     If Exempt = 1 Then
-        myStateExemption = 2125
+        myStateExemption = 2325
     End If
-    If deductType = 1 Then
-        myStateDeduct = myItemizedDeduct - mySALT
-            If myStateDeduct < 6350 Then
-                myStateDeduct = 6350
-            End If
-    End If
-    myAGI = myIncome - myStateDeduct - myStateExemption - my401k - myHC - myWageWorks
+    'IL doesn't have state deductions--not sure why I put one in the original macro in the first place
+    myAGI = myIncome - myStateExemption - my401k - myHC - myWageWorks - myNonItemizedDeduct
     myStateTax = 0.0495 * myAGI
 
 
@@ -1254,11 +1249,11 @@ ElseIf myState = "NM" Then
 ElseIf myState = "NY" Then
     If deductType = 1 Then
         myStateDeduct = myItemizedDeduct - mySALT
-            If myStateDeduct < 7900 Then
-                myStateDeduct = 7900
+            If myStateDeduct < 8000 Then
+                myStateDeduct = 8000
             End If
     ElseIf deductType = 2 Then
-        myStateDeduct = 7900
+        myStateDeduct = 8000
     End If
     myAGI = myIncome - myStateDeduct - my401k - myHC - myWageWorks
     If myAGI < 8500 Then
@@ -1270,13 +1265,13 @@ ElseIf myState = "NY" Then
     ElseIf myAGI > 13900 And myAGI <= 21400 Then
         myStateTax = 0.059 * (myAGI - 13900) + 600
     ElseIf myAGI > 21400 And myAGI <= 80650 Then
-        myStateTax = 0.0633 * (myAGI - 21400) + 1042 'Tax rate goes down by 0.12% each year beginning in 2018
+        myStateTax = 0.0621 * (myAGI - 21400) + 1042 'Tax rate goes down by 0.12% each year beginning in 2018
     ElseIf myAGI > 80650 And myAGI <= 215400 Then
-        myStateTax = 0.0657 * (myAGI - 80650) + 4775 'Tax rate goes down by 0.08% each year beginning in 2018
+        myStateTax = 0.0649 * (myAGI - 80650) + 4721 'Tax rate goes down by 0.08% each year beginning in 2018
     ElseIf myAGI > 215400 And myAGI <= 1077550 Then
-        myStateTax = 0.0685 * (myAGI - 215400) + 13628
+        myStateTax = 0.0685 * (myAGI - 215400) + 13467
     ElseIf myAGI > 1077550 Then
-        myStateTax = 0.0882 * (myAGI - 1062650) + 72685
+        myStateTax = 0.0882 * (myAGI - 1062650) + 72524
     End If
     If myResCity = "New York, NY" Or myResCity = "New York City, NY" Or myResCity = "Brooklyn, NY" Or myResCity = "Bronx, NY" Or myResCity = "Staten Island, NY" Or myResCity = "Queens, NY" Then 'use NYS taxable income
         myAGI = myAGI + my401k 'I believe 401k is taxed in NYC, not sure
